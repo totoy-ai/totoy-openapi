@@ -1,0 +1,266 @@
+openapi: 3.0.3
+info:
+  version: 0.1.0
+  title: Totoy API
+  description: The Totoy REST API. Totoy translates and explains text, PDFs and scanned documents in 18 languages and 6 CEFR language levels
+  termsOfService: https://www.totoy.ai
+  contact:
+    name: Totoy Support
+    email: support@totoy.ai
+servers:
+  - url: https://api.totoy.ai/v1
+paths:
+  /explanation:
+    post:
+      summary: Explains a given document in a specified output language and CEFR level
+      operationId: explanation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - document
+                - output_language
+              properties:
+                document:
+                  type: string
+                  description: Base64-encoded PDF, JPG or PNG file
+                  example: SGVsbG8sIFdvcmxkIQ==
+                input_language:
+                  type: string
+                  enum:
+                    - auto
+                    - ar
+                    - bs
+                    - de
+                    - es
+                    - en
+                    - fa
+                    - fr
+                    - hr
+                    - hu
+                    - it
+                    - pl
+                    - ro
+                    - sk
+                    - sl
+                    - sr
+                    - tl
+                    - tr
+                    - uk
+                  description: Input Language ID of the document (optional)
+                  example: auto
+                  default: auto
+                output_language:
+                  type: string
+                  enum:
+                    - ar
+                    - bs
+                    - de
+                    - es
+                    - en
+                    - fa
+                    - fr
+                    - hr
+                    - hu
+                    - it
+                    - pl
+                    - ro
+                    - sk
+                    - sl
+                    - sr
+                    - tl
+                    - tr
+                    - uk
+                  description: Output Language ID for the generated explanation
+                  example: en
+                output_language_level:
+                  type: string
+                  enum:
+                    - a1
+                    - a2
+                    - b1
+                    - b2
+                    - c1
+                    - c2
+                  description: Output Language CEFR Level
+                  default: b1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - explanation
+                  - document_id
+                properties:
+                  explanation:
+                    type: string
+                    description: Generated explanation based on the provided document
+                    example: This is a letter from the City of Vienna. It's about the "Viennese Housing Bonus '23". This bonus is meant to help people with the increasing costs of living, especially housing costs. Each address in Vienna can receive 200 euros. To be eligible, you need to have your main residence in Vienna and be at least 18 years old by June 28, 2023. You can apply for the bonus online between July 17 and September 30, 2023, using the password provided in the letter. Remember, only one application per address is allowed. For more information and to apply, visit wien.gv.at/wohnbonus23.
+                  document_id:
+                    type: string
+                    description: Uniqe Document ID to reference for follow-up questions
+                    example: d8103263-4b9b-4c1e-96e6-7e5936e8fe1f
+                  
+  /translation:
+    post:
+      summary: Translates text to a target language
+      operationId: translation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+                - output_language
+              properties:
+                text:
+                  type: string
+                  description: Input Text for Translation
+                  example: Hello, World!
+                input_language:
+                  type: string
+                  enum:
+                    - auto
+                    - ar
+                    - bs
+                    - de
+                    - es
+                    - en
+                    - fa
+                    - fr
+                    - hr
+                    - hu
+                    - it
+                    - pl
+                    - ro
+                    - sk
+                    - sl
+                    - sr
+                    - tl
+                    - tr
+                    - uk
+                  description: Input Language ID of the document (optional)
+                  example: auto
+                  default: auto
+                output_language:
+                  type: string
+                  enum:
+                    - ar
+                    - bs
+                    - de
+                    - es
+                    - en
+                    - fa
+                    - fr
+                    - hr
+                    - hu
+                    - it
+                    - pl
+                    - ro
+                    - sk
+                    - sl
+                    - sr
+                    - tl
+                    - tr
+                    - uk
+                  description: Output Language ID for the generated explanation
+                  example: de
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - translation
+                properties:
+                  translation:
+                    type: string
+                    description: Translated text
+                    example: Hallo, Welt!
+  /document-translation:
+    post:
+      summary: Translates a document to a target language
+      operationId: documentTranslation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - document
+                - output_language
+              properties:
+                document:
+                  type: string
+                  description: Base64-encoded PDF, JPG or PNG file
+                  example: SGVsbG8sIFdvcmxkIQ==
+                input_language:
+                  type: string
+                  enum:
+                    - auto
+                    - ar
+                    - bs
+                    - de
+                    - es
+                    - en
+                    - fa
+                    - fr
+                    - hr
+                    - hu
+                    - it
+                    - pl
+                    - ro
+                    - sk
+                    - sl
+                    - sr
+                    - tl
+                    - tr
+                    - uk
+                  description: Input Language ID of the document (optional)
+                  example: auto
+                  default: auto
+                output_language:
+                  type: string
+                  enum:
+                    - ar
+                    - bs
+                    - de
+                    - es
+                    - en
+                    - fa
+                    - fr
+                    - hr
+                    - hu
+                    - it
+                    - pl
+                    - ro
+                    - sk
+                    - sl
+                    - sr
+                    - tl
+                    - tr
+                    - uk
+                  description: Output Language ID for the document translation
+                  example: en
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - translated_document
+                properties:
+                  translated_document:
+                    type: string
+                    description: base64-encoded translated document
+                    example: SGVsbG8sIFdvcmxkIQ==
