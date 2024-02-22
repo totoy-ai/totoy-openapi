@@ -313,3 +313,35 @@ paths:
                     description: The unique identifier for the inserted document.
         '400':
           description: Invalid request format.
+  /auth:
+    post: 
+      summary: Authenticates the device and returns an access token.
+      operationId: authenticateDevice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+               deviceId:
+                type: string
+                description: A unique identifier for the device.
+              required:
+                - deviceId
+      responses:
+          '200':
+            description: Authentication successful.
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    accessToken:
+                      type: string
+                      description: Access token for the device to use in subsequent requests.
+                    refreshToken:
+                      type: string
+                      description: (Optional) A token to use for obtaining a new access token once the current one expires.
+          '401':
+            description: Authentication failed.
