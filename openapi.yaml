@@ -22,6 +22,7 @@ paths:
               required:
                 - document
                 - output_language
+                - history
               properties:
                 document:
                   type: string
@@ -86,6 +87,25 @@ paths:
                     - c2
                   description: Output Language CEFR Level
                   default: b1
+                history:
+                  type: array
+                  description: Conversation history to provide context for the model about the document. Empty on initial question.
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        description: The type of entry (e.g., question, answer, note).
+                      role:
+                        type: string
+                        enum:
+                          - user
+                          - assistant
+                          - system
+                      content:
+                        type: string
+                        description: The text content of the history entry.
+
       responses:
         '200':
           description: OK
@@ -104,8 +124,7 @@ paths:
                   document_id:
                     type: string
                     description: Uniqe Document ID to reference for follow-up questions
-                    example: d8103263-4b9b-4c1e-96e6-7e5936e8fe1f
-                  
+                    example: d8103263-4b9b-4c1e-96e6-7e5936e8fe1f      
   /translation:
     post:
       summary: Translates text to a target language
@@ -264,3 +283,33 @@ paths:
                     type: string
                     description: base64-encoded translated document
                     example: SGVsbG8sIFdvcmxkIQ==
+  /document:
+    post:
+      summary: Inserts a document into the database and returns a document id.
+      operationId: insertDocument
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                document:
+                  type: string
+                  format: byte
+                  description: The document content encoded in base64.
+              required:
+               - document
+      responses:
+        '200':
+          description: Document successfully inserted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  doc_id:
+                    type: string
+                    description: The unique identifier for the inserted document.
+        '400':
+          description: Invalid request format.
