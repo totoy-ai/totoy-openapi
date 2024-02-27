@@ -345,3 +345,61 @@ paths:
                       description: (Optional) A token to use for obtaining a new access token once the current one expires.
           '401':
             description: Authentication failed.
+  /user:
+    post:
+      summary: Adds a new user to the system
+      operationId: addUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+              required:
+                - name
+                - email
+      responses:
+        '201':
+          description: User successfully created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                    description: The unique identifier for the newly created user.
+        '400':
+          description: Invalid input provided.
+  /user/{userId}:
+    get:
+      summary: Retrieves a user's details
+      operationId: getUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: The unique identifier of the user to retrieve
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User details retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                  name:
+                    type: string
+                  email:
+                    type: string
+        '404':
+          description: User not found.
