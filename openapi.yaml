@@ -8,9 +8,9 @@ info:
     name: Totoy Support
     email: support@totoy.ai
 servers:
-  - url: https://api.totoy.ai/v1
+  - url: https://api.totoy.ai
 paths:
-  /explanation:
+  /v1/explanation:
     post:
       summary: Explains a given document in a specified output language and CEFR level
       operationId: explanation
@@ -125,7 +125,7 @@ paths:
                     type: string
                     description: Uniqe Document ID to reference for follow-up questions
                     example: d8103263-4b9b-4c1e-96e6-7e5936e8fe1f      
-  /translation:
+  /v1/translation:
     post:
       summary: Translates text to a target language
       operationId: translation
@@ -204,7 +204,7 @@ paths:
                     type: string
                     description: Translated text
                     example: Hallo, Welt!
-  /document-translation:
+  /v1/document-translation:
     post:
       summary: Translates a document to a target language
       operationId: documentTranslation
@@ -283,7 +283,7 @@ paths:
                     type: string
                     description: base64-encoded translated document
                     example: SGVsbG8sIFdvcmxkIQ==
-  /document:
+  /v1/document:
     post:
       summary: Inserts a document into the database and returns a document id.
       operationId: insertDocument
@@ -313,7 +313,7 @@ paths:
                     description: The unique identifier for the inserted document.
         '400':
           description: Invalid request format.
-  /auth:
+  /v1/auth:
     post: 
       summary: Authenticates the device and returns an access token.
       operationId: authenticateDevice
@@ -345,7 +345,7 @@ paths:
                       description: (Optional) A token to use for obtaining a new access token once the current one expires.
           '401':
             description: Authentication failed.
-  /user:
+  /v1/user:
     post:
       summary: Adds a new user to the system
       operationId: addUser
@@ -376,7 +376,7 @@ paths:
                     description: The unique identifier for the newly created user.
         '400':
           description: Invalid input provided.
-  /user/{userId}:
+  /v1/user/{userId}:
     get:
       summary: Retrieves a user's details
       operationId: getUser
