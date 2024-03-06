@@ -8,9 +8,9 @@ info:
     name: Totoy Support
     email: support@totoy.ai
 servers:
-  - url: https://api.totoy.ai/v1
+  - url: https://api.totoy.ai
 paths:
-  /explanation:
+  /v1/explanation:
     post:
       summary: Explains a given document in a specified output language and CEFR level
       operationId: explanation
@@ -22,6 +22,7 @@ paths:
               required:
                 - document
                 - output_language
+                - history
               properties:
                 document:
                   type: string
@@ -86,6 +87,25 @@ paths:
                     - c2
                   description: Output Language CEFR Level
                   default: b1
+                history:
+                  type: array
+                  description: Conversation history to provide context for the model about the document. Empty on initial question.
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        description: The type of entry (e.g., question, answer, note).
+                      role:
+                        type: string
+                        enum:
+                          - user
+                          - assistant
+                          - system
+                      content:
+                        type: string
+                        description: The text content of the history entry.
+
       responses:
         '200':
           description: OK
@@ -104,9 +124,8 @@ paths:
                   document_id:
                     type: string
                     description: Uniqe Document ID to reference for follow-up questions
-                    example: d8103263-4b9b-4c1e-96e6-7e5936e8fe1f
-                  
-  /translation:
+                    example: d8103263-4b9b-4c1e-96e6-7e5936e8fe1f      
+  /v1/translation:
     post:
       summary: Translates text to a target language
       operationId: translation
@@ -185,7 +204,7 @@ paths:
                     type: string
                     description: Translated text
                     example: Hallo, Welt!
-  /document-translation:
+  /v1/document-translation:
     post:
       summary: Translates a document to a target language
       operationId: documentTranslation
@@ -264,3 +283,123 @@ paths:
                     type: string
                     description: base64-encoded translated document
                     example: SGVsbG8sIFdvcmxkIQ==
+  /v1/document:
+    post:
+      summary: Inserts a document into the database and returns a document id.
+      operationId: insertDocument
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                document:
+                  type: string
+                  format: byte
+                  description: The document content encoded in base64.
+              required:
+               - document
+      responses:
+        '200':
+          description: Document successfully inserted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  doc_id:
+                    type: string
+                    description: The unique identifier for the inserted document.
+        '400':
+          description: Invalid request format.
+  /v1/auth:
+    post: 
+      summary: Authenticates the device and returns an access token.
+      operationId: authenticateDevice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+               deviceId:
+                type: string
+                description: A unique identifier for the device.
+              required:
+                - deviceId
+      responses:
+          '200':
+            description: Authentication successful.
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    accessToken:
+                      type: string
+                      description: Access token for the device to use in subsequent requests.
+                    refreshToken:
+                      type: string
+                      description: (Optional) A token to use for obtaining a new access token once the current one expires.
+          '401':
+            description: Authentication failed.
+  /v1/user:
+    post:
+      summary: Adds a new user to the system
+      operationId: addUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+              required:
+                - name
+                - email
+      responses:
+        '201':
+          description: User successfully created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                    description: The unique identifier for the newly created user.
+        '400':
+          description: Invalid input provided.
+  /v1/user/{userId}:
+    get:
+      summary: Retrieves a user's details
+      operationId: getUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: The unique identifier of the user to retrieve
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User details retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                  name:
+                    type: string
+                  email:
+                    type: string
+        '404':
+          description: User not found.
