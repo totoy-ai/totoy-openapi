@@ -26,6 +26,7 @@ paths:
               properties:
                 document:
                   type: string
+                  nullable: true
                   description: Base64-encoded PDF, JPG or PNG file
                   example: SGVsbG8sIFdvcmxkIQ==
                 input_language:
@@ -89,13 +90,14 @@ paths:
                   default: b1
                 history:
                   type: array
+                  nullable: true
                   description: Conversation history to provide context for the model about the document. Empty on initial question.
                   items:
                     type: object
                     properties:
                       type:
                         type: string
-                        description: The type of entry (e.g., question, answer, note).
+                        description: The type of entry (e.g., question, answer, context).
                       role:
                         type: string
                         enum:
@@ -105,7 +107,56 @@ paths:
                       content:
                         type: string
                         description: The text content of the history entry.
-
+            examples:
+              example1:
+                summary: Example first request
+                value:
+                  document: SGVsbG8sIFdvcmxkIQ==
+                  input_language: auto
+                  output_language: en
+                  output_language_level: b1
+                  history:
+              example2:
+                summary: Example chat request
+                value: 
+                  document:
+                  input_language: auto
+                  output_language: en
+                  output_language_level: b1
+                  history:
+                    - type: context
+                      role: system
+                      content: |
+                        villach :stadt
+                        Bau-Transporte-Erdbau Musterfirma Herrn Ing. Max Mustermann Musterstraße 1 9500 Villach
+                        Abteilung
+                        ===
+                        9500 Villach, Rathaus, Rathausplatz 1 www.villach.at
+                        Auskunft Inge Muster T 04242 / 205-XXXX F 04242 / 205-XXXX E vorname.nachname@villach.at
+                        DVR: 0013145 Unsere Zahl: ÖA/01/17/extern Villach, 1. April 20xx
+                        Auftrag für Humusarbeiten
+                        Sehr geehrter Herr Ingenier Mustermann,
+                        vielen Dank für Ihr Angebot vom 31. März 20xx an die Stadt Villach, Abteilung Tiefbau. Gerne erteilen wir Ihnen den Auftrag „Humusabtrag Waldweg Landskron“.
+                        | | in EUR |
+                        | - | - |
+                        | Leistungssumme für Baggerarbeit von rund | 800,00 |
+                        | abzüglich Rückkauf von Humus ca. 150 m3 à EUR 2,40 | 360,00 |
+                        | Auftragssumme | 440,00 |
+                        Alle Beträge inklusive 20 % Umsatzsteuer. Ausführung innerhalb 1 Woche ab Bestellung. Zahlungsziel ist 30 Tage netto.
+                        Es gelten die Preise und Bedingungen des Angebotes vom 31. März 20xx.
+                        Freundliche Grüße
+                        Inge Muster Abteilungsleiterin
+                    - type: question
+                      role: user
+                      content: Totoy what is this?
+                    - type: answer
+                      role: assistant
+                      content: |
+                        Hi! You got a letter confirming that your offer for soil work in Villach was accepted.
+                        The job is about removing soil on a specific path. The cost is EUR 440.00, including a 20% tax.
+                        The work should be done within a week of ordering, and you have 30 days to pay.
+                        The terms and prices from your offer on March 31, 20xx, apply. Kind regards, Inge Muster, Department Head.
+                        That's it if you have further question, just let me know.
       responses:
         '200':
           description: OK
