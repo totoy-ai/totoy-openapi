@@ -15,12 +15,16 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    subscriptionAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: string
 paths:
   /v1/explanation:
     post:
       summary: Explains a given document in a specified output language and CEFR level
       security:
-        - bearerAuth: []
+        - subscriptionAuth: []
       operationId: explanation
       requestBody:
         content:
@@ -31,12 +35,17 @@ paths:
                 - document
                 - output_language
                 - history
+                - session_id
               properties:
                 document:
                   type: string
                   nullable: true
                   description: Base64-encoded PDF, JPG or PNG file
                   example: SGVsbG8sIFdvcmxkIQ==
+                session_id:
+                  type: string
+                  description: keeps track of the users current session
+                  example: nldh884
                 input_language:
                   type: string
                   enum:
@@ -123,6 +132,7 @@ paths:
                   input_language: auto
                   output_language: en
                   output_language_level: b1
+                  session_id: nldh884
                   history:
               example2:
                 summary: Example chat request
@@ -131,6 +141,7 @@ paths:
                   input_language: auto
                   output_language: en
                   output_language_level: b1
+                  session_id: nldh884
                   history:
                     - type: context
                       role: system
@@ -362,18 +373,23 @@ paths:
                   example: en
       responses:
         '200':
-          description: OK
+          description: Successful
           content:
             application/json:
               schema:
                 type: object
                 required:
-                  - translated_document
+                  - explanation
+                  - document_id
                 properties:
-                  translated_document:
+                  explanation:
                     type: string
-                    description: base64-encoded translated document
-                    example: SGVsbG8sIFdvcmxkIQ==
+                    description: Generated explanation based on the provided document
+                    example: This is a letter from the City of Vienna. It's about the "Viennese Housing Bonus '23". This bonus is meant to help people with the increasing costs of living, especially housing costs. Each address in Vienna can receive 200 euros. To be eligible, you need to have your main residence in Vienna and be at least 18 years old by June 28, 2023. You can apply for the bonus online between July 17 and September 30, 2023, using the password provided in the letter. Remember, only one application per address is allowed. For more information and to apply, visit wien.gv.at/wohnbonus23.
+                  document_id:
+                    type: string
+                    description: Uniqe Document ID to reference for follow-up questions
+                    example: d8103263-4b9b-4c1e-96e6-7e5936e8fe1f
         '401':
           description: Unauthorized
           content:
@@ -434,52 +450,6 @@ paths:
                 example:
                   error: "Unauthorized"
                   message: "Authentication credentials were missing or incorrect." 
-  /v1/auth:
-    post: 
-      summary: Authenticates the device and returns an access token.
-      security:
-        - bearerAuth: []
-      operationId: authenticateDevice
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-               deviceId:
-                type: string
-                description: A unique identifier for the device.
-              required:
-                - deviceId
-      responses:
-          '200':
-            description: Authentication successful.
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    accessToken:
-                      type: string
-                      description: Access token for the device to use in subsequent requests.
-                    refreshToken:
-                      type: string
-                      description: (Optional) A token to use for obtaining a new access token once the current one expires.
-          '401':
-            description: Unauthorized
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    error:
-                      type: string
-                    message:
-                      type: string
-                  example:
-                    error: "Unauthorized"
-                    message: "Authentication credentials were missing or incorrect." 
   /v1/user:
     post:
       summary: Adds a new user to the system
@@ -527,12 +497,203 @@ paths:
                 example:
                   error: "Unauthorized"
                   message: "Authentication credentials were missing or incorrect." 
-  /v1/get-jwt:
-    get:
-      summary: Obtain a JWT
-      description: This endpoint provides a JWT based on the authenticated session or provided API key.
+  /v1/verify-explanation:
+    post:
+      summary: Verifies the access token's validity and returns an explanation of the provided Document on successful verification.
       security:
         - bearerAuth: []
+      operationId: verifyTokenAndFetchExplanation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - document
+                - output_language
+                - history
+              properties:
+                document:
+                  type: string
+                  nullable: true
+                  description: Base64-encoded PDF, JPG or PNG file
+                  example: SGVsbG8sIFdvcmxkIQ==
+                input_language:
+                  type: string
+                  enum:
+                    - auto
+                    - ar
+                    - bs
+                    - de
+                    - es
+                    - en
+                    - fa
+                    - fr
+                    - hr
+                    - hu
+                    - it
+                    - pl
+                    - ro
+                    - sk
+                    - sl
+                    - sr
+                    - tl
+                    - tr
+                    - uk
+                  description: Input Language ID of the document (optional)
+                  example: auto
+                  default: auto
+                output_language:
+                  type: string
+                  enum:
+                    - ar
+                    - bs
+                    - de
+                    - es
+                    - en
+                    - fa
+                    - fr
+                    - hr
+                    - hu
+                    - it
+                    - pl
+                    - ro
+                    - sk
+                    - sl
+                    - sr
+                    - tl
+                    - tr
+                    - uk
+                  description: Output Language ID for the generated explanation
+                  example: en
+                output_language_level:
+                  type: string
+                  enum:
+                    - a1
+                    - a2
+                    - b1
+                    - b2
+                    - c1
+                    - c2
+                  description: Output Language CEFR Level
+                  default: b1
+                history:
+                  type: array
+                  nullable: true
+                  description: Conversation history to provide context for the model about the document. Empty on initial question.
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        description: The type of entry (e.g., question, answer, context).
+                      role:
+                        type: string
+                        enum:
+                          - user
+                          - assistant
+                          - system
+                      content:
+                        type: string
+                        description: The text content of the history entry.
+            examples:
+              example1:
+                summary: Example first request
+                value:
+                  document: SGVsbG8sIFdvcmxkIQ==
+                  input_language: auto
+                  output_language: en
+                  output_language_level: b1
+                  history:
+              example2:
+                summary: Example chat request
+                value: 
+                  document:
+                  input_language: auto
+                  output_language: en
+                  output_language_level: b1
+                  history:
+                    - type: context
+                      role: system
+                      content: |
+                        villach :stadt
+                        Bau-Transporte-Erdbau Musterfirma Herrn Ing. Max Mustermann Musterstraße 1 9500 Villach
+                        Abteilung
+                        ===
+                        9500 Villach, Rathaus, Rathausplatz 1 www.villach.at
+                        Auskunft Inge Muster T 04242 / 205-XXXX F 04242 / 205-XXXX E vorname.nachname@villach.at
+                        DVR: 0013145 Unsere Zahl: ÖA/01/17/extern Villach, 1. April 20xx
+                        Auftrag für Humusarbeiten
+                        Sehr geehrter Herr Ingenier Mustermann,
+                        vielen Dank für Ihr Angebot vom 31. März 20xx an die Stadt Villach, Abteilung Tiefbau. Gerne erteilen wir Ihnen den Auftrag „Humusabtrag Waldweg Landskron“.
+                        | | in EUR |
+                        | - | - |
+                        | Leistungssumme für Baggerarbeit von rund | 800,00 |
+                        | abzüglich Rückkauf von Humus ca. 150 m3 à EUR 2,40 | 360,00 |
+                        | Auftragssumme | 440,00 |
+                        Alle Beträge inklusive 20 % Umsatzsteuer. Ausführung innerhalb 1 Woche ab Bestellung. Zahlungsziel ist 30 Tage netto.
+                        Es gelten die Preise und Bedingungen des Angebotes vom 31. März 20xx.
+                        Freundliche Grüße
+                        Inge Muster Abteilungsleiterin
+                    - type: question
+                      role: user
+                      content: Totoy what is this?
+                    - type: answer
+                      role: assistant
+                      content: |
+                        Hi! You got a letter confirming that your offer for soil work in Villach was accepted.
+                        The job is about removing soil on a specific path. The cost is EUR 440.00, including a 20% tax.
+                        The work should be done within a week of ordering, and you have 30 days to pay.
+                        The terms and prices from your offer on March 31, 20xx, apply. Kind regards, Inge Muster, Department Head.
+                        That's it if you have further question, just let me know.
+      responses:
+        '200':
+          description: Token verification successful, explanation provided.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: A success message indicating the token is valid.
+                  expiresIn:
+                    type: string
+                    description: The remaining time until the token expires, represented in a human-readable format.
+                  explanation:
+                    type: string
+                    description: The explanation content retrieved upon successful token verification.
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                example:
+                  error: "Bad Request"
+                  message: "Invalid token format or missing session ID."
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                example:
+                  error: "Unauthorized"
+                  message: "Token is expired or session ID does not match."
+  /v1/auth:
+    get:
+      summary: Obtain a valid access token
+      description: This endpoint provides a access token.
       responses:
         '200':
           description: Successfull
@@ -541,11 +702,11 @@ paths:
               schema:
                 type: object
                 properties:
-                  jwt:
+                  token:
                     type: string
-                    description: The JWT token.
+                    description: Valid token.
               example:
-                jwt: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+                token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
         '403':
           description: Forbidden
           content:
