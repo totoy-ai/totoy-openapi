@@ -1,0 +1,828 @@
+openapi: 3.0.3
+info:
+  contact:
+    email: support@totoy.ai
+    name: Totoy Support
+  description: "The Totoy REST API. Totoy translates and explains text, PDFs and scanned\
+    \ documents in 18 languages and 6 CEFR language levels"
+  termsOfService: https://www.totoy.ai
+  title: Totoy API
+  version: 0.1.0
+servers:
+- url: https://api.totoy.ai
+paths:
+  /v1/explanation:
+    post:
+      operationId: explanation
+      requestBody:
+        content:
+          application/json:
+            examples:
+              example1:
+                summary: Example first request
+                value:
+                  document: SGVsbG8sIFdvcmxkIQ==
+                  input_language: auto
+                  output_language: en
+                  output_language_level: b1
+                  session_id: nldh884
+                  history: null
+              example2:
+                summary: Example chat request
+                value:
+                  document: null
+                  input_language: auto
+                  output_language: en
+                  output_language_level: b1
+                  session_id: nldh884
+                  history:
+                  - type: context
+                    role: system
+                    content: |
+                      villach :stadt
+                      Bau-Transporte-Erdbau Musterfirma Herrn Ing. Max Mustermann Musterstraße 1 9500 Villach
+                      Abteilung
+                      ===
+                      9500 Villach, Rathaus, Rathausplatz 1 www.villach.at
+                      Auskunft Inge Muster T 04242 / 205-XXXX F 04242 / 205-XXXX E vorname.nachname@villach.at
+                      DVR: 0013145 Unsere Zahl: ÖA/01/17/extern Villach, 1. April 20xx
+                      Auftrag für Humusarbeiten
+                      Sehr geehrter Herr Ingenier Mustermann,
+                      vielen Dank für Ihr Angebot vom 31. März 20xx an die Stadt Villach, Abteilung Tiefbau. Gerne erteilen wir Ihnen den Auftrag „Humusabtrag Waldweg Landskron“.
+                      | | in EUR |
+                      | - | - |
+                      | Leistungssumme für Baggerarbeit von rund | 800,00 |
+                      | abzüglich Rückkauf von Humus ca. 150 m3 à EUR 2,40 | 360,00 |
+                      | Auftragssumme | 440,00 |
+                      Alle Beträge inklusive 20 % Umsatzsteuer. Ausführung innerhalb 1 Woche ab Bestellung. Zahlungsziel ist 30 Tage netto.
+                      Es gelten die Preise und Bedingungen des Angebotes vom 31. März 20xx.
+                      Freundliche Grüße
+                      Inge Muster Abteilungsleiterin
+                  - type: question
+                    role: user
+                    content: Totoy what is this?
+                  - type: answer
+                    role: assistant
+                    content: |
+                      Hi! You got a letter confirming that your offer for soil work in Villach was accepted.
+                      The job is about removing soil on a specific path. The cost is EUR 440.00, including a 20% tax.
+                      The work should be done within a week of ordering, and you have 30 days to pay.
+                      The terms and prices from your offer on March 31, 20xx, apply. Kind regards, Inge Muster, Department Head.
+                      That's it if you have further question, just let me know.
+            schema:
+              $ref: '#/components/schemas/explanation_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/explanation_200_response'
+          description: Successful
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/explanation_401_response'
+          description: Unauthorized
+      security:
+      - subscriptionAuth: []
+      summary: Explains a given document in a specified output language and CEFR level
+  /v1/translation:
+    post:
+      operationId: translation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/translation_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/translation_200_response'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/explanation_401_response'
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+      summary: Translates text to a target language
+  /v1/document-translation:
+    post:
+      operationId: documentTranslation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/documentTranslation_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/explanation_200_response'
+          description: Successful
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/explanation_401_response'
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+      summary: Translates a document to a target language
+  /v1/document:
+    post:
+      operationId: insertDocument
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/insertDocument_request'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/insertDocument_200_response'
+          description: Document successfully inserted.
+        "400":
+          description: Invalid request format.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/explanation_401_response'
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+      summary: Inserts a document into the database and returns a document id.
+  /v1/user:
+    post:
+      operationId: addUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/addUser_request'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/addUser_201_response'
+          description: User successfully created.
+        "400":
+          description: Invalid input provided.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/explanation_401_response'
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+      summary: Adds a new user to the system
+  /v1/verify-explanation:
+    post:
+      operationId: verifyTokenAndFetchExplanation
+      requestBody:
+        content:
+          application/json:
+            examples:
+              example1:
+                summary: Example first request
+                value:
+                  document: SGVsbG8sIFdvcmxkIQ==
+                  input_language: auto
+                  output_language: en
+                  output_language_level: b1
+                  history: null
+              example2:
+                summary: Example chat request
+                value:
+                  document: null
+                  input_language: auto
+                  output_language: en
+                  output_language_level: b1
+                  history:
+                  - type: context
+                    role: system
+                    content: |
+                      villach :stadt
+                      Bau-Transporte-Erdbau Musterfirma Herrn Ing. Max Mustermann Musterstraße 1 9500 Villach
+                      Abteilung
+                      ===
+                      9500 Villach, Rathaus, Rathausplatz 1 www.villach.at
+                      Auskunft Inge Muster T 04242 / 205-XXXX F 04242 / 205-XXXX E vorname.nachname@villach.at
+                      DVR: 0013145 Unsere Zahl: ÖA/01/17/extern Villach, 1. April 20xx
+                      Auftrag für Humusarbeiten
+                      Sehr geehrter Herr Ingenier Mustermann,
+                      vielen Dank für Ihr Angebot vom 31. März 20xx an die Stadt Villach, Abteilung Tiefbau. Gerne erteilen wir Ihnen den Auftrag „Humusabtrag Waldweg Landskron“.
+                      | | in EUR |
+                      | - | - |
+                      | Leistungssumme für Baggerarbeit von rund | 800,00 |
+                      | abzüglich Rückkauf von Humus ca. 150 m3 à EUR 2,40 | 360,00 |
+                      | Auftragssumme | 440,00 |
+                      Alle Beträge inklusive 20 % Umsatzsteuer. Ausführung innerhalb 1 Woche ab Bestellung. Zahlungsziel ist 30 Tage netto.
+                      Es gelten die Preise und Bedingungen des Angebotes vom 31. März 20xx.
+                      Freundliche Grüße
+                      Inge Muster Abteilungsleiterin
+                  - type: question
+                    role: user
+                    content: Totoy what is this?
+                  - type: answer
+                    role: assistant
+                    content: |
+                      Hi! You got a letter confirming that your offer for soil work in Villach was accepted.
+                      The job is about removing soil on a specific path. The cost is EUR 440.00, including a 20% tax.
+                      The work should be done within a week of ordering, and you have 30 days to pay.
+                      The terms and prices from your offer on March 31, 20xx, apply. Kind regards, Inge Muster, Department Head.
+                      That's it if you have further question, just let me know.
+            schema:
+              $ref: '#/components/schemas/verifyTokenAndFetchExplanation_request'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/verifyTokenAndFetchExplanation_200_response'
+          description: "Token verification successful, explanation provided."
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/verifyTokenAndFetchExplanation_400_response'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/verifyTokenAndFetchExplanation_401_response'
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+      summary: Verifies the access token's validity and returns an explanation of
+        the provided Document on successful verification.
+  /v1/auth:
+    get:
+      description: This endpoint provides a access token.
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+              schema:
+                $ref: '#/components/schemas/_v1_auth_get_200_response'
+          description: Successfull
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_v1_auth_get_403_response'
+          description: Forbidden
+      summary: Obtain a valid access token
+  /v1/user/{userId}:
+    get:
+      operationId: getUser
+      parameters:
+      - description: The unique identifier of the user to retrieve
+        explode: false
+        in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getUser_200_response'
+          description: User details retrieved successfully.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/explanation_401_response'
+          description: Unauthorized
+        "404":
+          description: User not found.
+      security:
+      - bearerAuth: []
+      summary: Retrieves a user's details
+components:
+  schemas:
+    translation_200_response:
+      example:
+        translation: "Hallo, Welt!"
+      properties:
+        translation:
+          description: Translated text
+          example: "Hallo, Welt!"
+          title: translation
+          type: string
+      required:
+      - translation
+      title: translation_200_response
+      type: object
+    insertDocument_request:
+      properties:
+        document:
+          description: The document content encoded in base64.
+          format: byte
+          title: document
+          type: string
+      required:
+      - document
+      title: insertDocument_request
+      type: object
+    insertDocument_200_response:
+      example:
+        doc_id: doc_id
+      properties:
+        doc_id:
+          description: The unique identifier for the inserted document.
+          title: doc_id
+          type: string
+      title: insertDocument_200_response
+      type: object
+    _v1_auth_get_403_response:
+      example:
+        message: Access denied.
+      properties:
+        message:
+          type: string
+      title: _v1_auth_get_403_response
+      type: object
+    explanation_401_response:
+      example:
+        error: Unauthorized
+        message: Authentication credentials were missing or incorrect.
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      title: explanation_401_response
+      type: object
+    addUser_request:
+      properties:
+        name:
+          title: name
+          type: string
+        email:
+          title: email
+          type: string
+      required:
+      - email
+      - name
+      title: addUser_request
+      type: object
+    verifyTokenAndFetchExplanation_400_response:
+      example:
+        error: Bad Request
+        message: Invalid token format or missing session ID.
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      title: verifyTokenAndFetchExplanation_400_response
+      type: object
+    verifyTokenAndFetchExplanation_200_response:
+      example:
+        expiresIn: expiresIn
+        message: message
+        explanation: explanation
+      properties:
+        message:
+          description: A success message indicating the token is valid.
+          title: message
+          type: string
+        expiresIn:
+          description: "The remaining time until the token expires, represented in\
+            \ a human-readable format."
+          title: expiresIn
+          type: string
+        explanation:
+          description: The explanation content retrieved upon successful token verification.
+          title: explanation
+          type: string
+      title: verifyTokenAndFetchExplanation_200_response
+      type: object
+    explanation_request_history_inner:
+      properties:
+        type:
+          description: "The type of entry (e.g., question, answer, context)."
+          title: type
+          type: string
+        role:
+          enum:
+          - user
+          - assistant
+          - system
+          title: role
+          type: string
+        content:
+          description: The text content of the history entry.
+          title: content
+          type: string
+      title: explanation_request_history_inner
+      type: object
+    translation_request:
+      properties:
+        text:
+          description: Input Text for Translation
+          example: "Hello, World!"
+          title: text
+          type: string
+        input_language:
+          default: auto
+          description: Input Language ID of the document (optional)
+          enum:
+          - auto
+          - ar
+          - bs
+          - de
+          - es
+          - en
+          - fa
+          - fr
+          - hr
+          - hu
+          - it
+          - pl
+          - ro
+          - sk
+          - sl
+          - sr
+          - tl
+          - tr
+          - uk
+          example: auto
+          title: input_language
+          type: string
+        output_language:
+          description: Output Language ID for the generated explanation
+          enum:
+          - ar
+          - bs
+          - de
+          - es
+          - en
+          - fa
+          - fr
+          - hr
+          - hu
+          - it
+          - pl
+          - ro
+          - sk
+          - sl
+          - sr
+          - tl
+          - tr
+          - uk
+          example: de
+          title: output_language
+          type: string
+      required:
+      - output_language
+      - text
+      title: translation_request
+      type: object
+    verifyTokenAndFetchExplanation_401_response:
+      example:
+        error: Unauthorized
+        message: Token is expired or session ID does not match.
+      properties:
+        error:
+          type: string
+      title: verifyTokenAndFetchExplanation_401_response
+      type: object
+    getUser_200_response:
+      example:
+        name: name
+        userId: userId
+        email: email
+      properties:
+        userId:
+          title: userId
+          type: string
+        name:
+          title: name
+          type: string
+        email:
+          title: email
+          type: string
+      title: getUser_200_response
+      type: object
+    _v1_auth_get_200_response:
+      example:
+        token: token
+      properties:
+        token:
+          description: Valid token.
+          title: token
+          type: string
+      title: _v1_auth_get_200_response
+      type: object
+    explanation_200_response:
+      example:
+        explanation: "This is a letter from the City of Vienna. It's about the \"\
+          Viennese Housing Bonus '23\". This bonus is meant to help people with the\
+          \ increasing costs of living, especially housing costs. Each address in\
+          \ Vienna can receive 200 euros. To be eligible, you need to have your main\
+          \ residence in Vienna and be at least 18 years old by June 28, 2023. You\
+          \ can apply for the bonus online between July 17 and September 30, 2023,\
+          \ using the password provided in the letter. Remember, only one application\
+          \ per address is allowed. For more information and to apply, visit wien.gv.at/wohnbonus23."
+        document_id: d8103263-4b9b-4c1e-96e6-7e5936e8fe1f
+      properties:
+        explanation:
+          description: Generated explanation based on the provided document
+          example: "This is a letter from the City of Vienna. It's about the \"Viennese\
+            \ Housing Bonus '23\". This bonus is meant to help people with the increasing\
+            \ costs of living, especially housing costs. Each address in Vienna can\
+            \ receive 200 euros. To be eligible, you need to have your main residence\
+            \ in Vienna and be at least 18 years old by June 28, 2023. You can apply\
+            \ for the bonus online between July 17 and September 30, 2023, using the\
+            \ password provided in the letter. Remember, only one application per\
+            \ address is allowed. For more information and to apply, visit wien.gv.at/wohnbonus23."
+          title: explanation
+          type: string
+        document_id:
+          description: Uniqe Document ID to reference for follow-up questions
+          example: d8103263-4b9b-4c1e-96e6-7e5936e8fe1f
+          title: document_id
+          type: string
+      required:
+      - document_id
+      - explanation
+      title: explanation_200_response
+      type: object
+    documentTranslation_request:
+      properties:
+        document:
+          description: "Base64-encoded PDF, JPG or PNG file"
+          example: SGVsbG8sIFdvcmxkIQ==
+          title: document
+          type: string
+        input_language:
+          default: auto
+          description: Input Language ID of the document (optional)
+          enum:
+          - auto
+          - ar
+          - bs
+          - de
+          - es
+          - en
+          - fa
+          - fr
+          - hr
+          - hu
+          - it
+          - pl
+          - ro
+          - sk
+          - sl
+          - sr
+          - tl
+          - tr
+          - uk
+          example: auto
+          title: input_language
+          type: string
+        output_language:
+          description: Output Language ID for the document translation
+          enum:
+          - ar
+          - bs
+          - de
+          - es
+          - en
+          - fa
+          - fr
+          - hr
+          - hu
+          - it
+          - pl
+          - ro
+          - sk
+          - sl
+          - sr
+          - tl
+          - tr
+          - uk
+          example: en
+          title: output_language
+          type: string
+      required:
+      - document
+      - output_language
+      title: documentTranslation_request
+      type: object
+    explanation_request:
+      properties:
+        document:
+          description: "Base64-encoded PDF, JPG or PNG file"
+          example: SGVsbG8sIFdvcmxkIQ==
+          nullable: true
+          title: document
+          type: string
+        session_id:
+          description: keeps track of the users current session
+          example: nldh884
+          title: session_id
+          type: string
+        input_language:
+          default: auto
+          description: Input Language ID of the document (optional)
+          enum:
+          - auto
+          - ar
+          - bs
+          - de
+          - es
+          - en
+          - fa
+          - fr
+          - hr
+          - hu
+          - it
+          - pl
+          - ro
+          - sk
+          - sl
+          - sr
+          - tl
+          - tr
+          - uk
+          example: auto
+          title: input_language
+          type: string
+        output_language:
+          description: Output Language ID for the generated explanation
+          enum:
+          - ar
+          - bs
+          - de
+          - es
+          - en
+          - fa
+          - fr
+          - hr
+          - hu
+          - it
+          - pl
+          - ro
+          - sk
+          - sl
+          - sr
+          - tl
+          - tr
+          - uk
+          example: en
+          title: output_language
+          type: string
+        output_language_level:
+          default: b1
+          description: Output Language CEFR Level
+          enum:
+          - a1
+          - a2
+          - b1
+          - b2
+          - c1
+          - c2
+          title: output_language_level
+          type: string
+        history:
+          description: Conversation history to provide context for the model about
+            the document. Empty on initial question.
+          items:
+            $ref: '#/components/schemas/explanation_request_history_inner'
+          nullable: true
+          title: history
+          type: array
+      required:
+      - document
+      - history
+      - output_language
+      - session_id
+      title: explanation_request
+      type: object
+    addUser_201_response:
+      example:
+        userId: userId
+      properties:
+        userId:
+          description: The unique identifier for the newly created user.
+          title: userId
+          type: string
+      title: addUser_201_response
+      type: object
+    verifyTokenAndFetchExplanation_request:
+      properties:
+        document:
+          description: "Base64-encoded PDF, JPG or PNG file"
+          example: SGVsbG8sIFdvcmxkIQ==
+          nullable: true
+          title: document
+          type: string
+        input_language:
+          default: auto
+          description: Input Language ID of the document (optional)
+          enum:
+          - auto
+          - ar
+          - bs
+          - de
+          - es
+          - en
+          - fa
+          - fr
+          - hr
+          - hu
+          - it
+          - pl
+          - ro
+          - sk
+          - sl
+          - sr
+          - tl
+          - tr
+          - uk
+          example: auto
+          title: input_language
+          type: string
+        output_language:
+          description: Output Language ID for the generated explanation
+          enum:
+          - ar
+          - bs
+          - de
+          - es
+          - en
+          - fa
+          - fr
+          - hr
+          - hu
+          - it
+          - pl
+          - ro
+          - sk
+          - sl
+          - sr
+          - tl
+          - tr
+          - uk
+          example: en
+          title: output_language
+          type: string
+        output_language_level:
+          default: b1
+          description: Output Language CEFR Level
+          enum:
+          - a1
+          - a2
+          - b1
+          - b2
+          - c1
+          - c2
+          title: output_language_level
+          type: string
+        history:
+          description: Conversation history to provide context for the model about
+            the document. Empty on initial question.
+          items:
+            $ref: '#/components/schemas/explanation_request_history_inner'
+          nullable: true
+          title: history
+          type: array
+      required:
+      - document
+      - history
+      - output_language
+      title: verifyTokenAndFetchExplanation_request
+      type: object
+  securitySchemes:
+    bearerAuth:
+      bearerFormat: JWT
+      scheme: bearer
+      type: http
+    subscriptionAuth:
+      bearerFormat: string
+      scheme: bearer
+      type: http
