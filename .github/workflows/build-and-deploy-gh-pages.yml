@@ -22,7 +22,7 @@ jobs:
         uses: actions/configure-pages@v5
       - name: Generate OpenAPI Documentation
         run: |
-          npx redoc-cli bundle openapi.yaml -o ./_site/openapi.html
+          npx redoc-cli bundle openapi.yaml -o ./openapi.html
       - name: Build with Jekyll
         uses: actions/jekyll-build-pages@v1
         with:
