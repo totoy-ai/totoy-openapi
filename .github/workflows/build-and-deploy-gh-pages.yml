@@ -4,13 +4,16 @@ on:
     tags:
       - '*'
   workflow_dispatch:
+
 permissions:
   contents: read
   pages: write
   id-token: write
+
 concurrency:
   group: "pages"
   cancel-in-progress: false
+
 jobs:
   deploy:
     environment:
@@ -28,7 +31,8 @@ jobs:
         run: |
           wget https://github.com/swagger-api/swagger-ui/archive/refs/tags/v5.11.3.zip
           unzip v5.11.3.zip
-          mv swagger-ui-5.11.3/dist _site
+          mkdir -p _site
+          mv swagger-ui-5.11.3/dist/* _site/
 
       - name: Copy OpenAPI spec
         run: |
@@ -36,20 +40,25 @@ jobs:
 
       - name: Update Swagger UI configuration
         run: |
-          # Print the content before replacement
-          echo "Before replacement:"
-          grep -A 5 "SwaggerUIBundle" _site/index.html
+          if [ ! -f _site/index.html ]; then
+            echo "Error: index.html not found"
+            ls -la _site/
+            exit 1
+          fi
           
-          # More robust sed command
-          sed -i 's|https://petstore.swagger.io/v2/swagger.json|./openapi.yaml|g' _site/index.html
+          echo "Original content:"
+          cat _site/index.html
           
-          # Print the content after replacement
-          echo "After replacement:"
-          grep -A 5 "SwaggerUIBundle" _site/index.html
+          # More specific sed pattern
+          sed -i 's|url: "https://petstore.swagger.io/v2/swagger.json"|url: "./openapi.yaml"|g' _site/index.html
           
-          # Verify file exists and has content
-          ls -la _site/
-          cat _site/index.html | grep -A 10 "SwaggerUIBundle"
+          echo "Updated content:"
+          cat _site/index.html
+          
+          if ! grep -q "openapi.yaml" _site/index.html; then
+            echo "Error: Failed to update swagger configuration"
+            exit 1
+          fi
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
