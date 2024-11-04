@@ -1,20 +1,16 @@
 name: Deploy OpenAPI Specification
-
 on:
   push:
     tags:
       - '*'
   workflow_dispatch:
-
 permissions:
   contents: read
   pages: write
   id-token: write
-
 concurrency:
   group: "pages"
   cancel-in-progress: false
-
 jobs:
   deploy:
     environment:
@@ -28,12 +24,19 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      - name: Create _site directory
+      - name: Download Swagger UI
         run: |
-          mkdir -p _site
+          wget https://github.com/swagger-api/swagger-ui/archive/refs/tags/v5.11.3.zip
+          unzip v5.11.3.zip
+          mv swagger-ui-5.11.3/dist _site
+
+      - name: Copy OpenAPI spec
+        run: |
           cp openapi.yaml _site/
-          # Create an index.html that redirects to the OpenAPI spec
-          echo '<meta http-equiv="refresh" content="0; url=openapi.yaml">' > _site/index.html
+
+      - name: Update Swagger UI configuration
+        run: |
+          sed -i 's|url: "https://petstore.swagger.io/v2/swagger.json"|url: "./openapi.yaml"|' _site/index.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
