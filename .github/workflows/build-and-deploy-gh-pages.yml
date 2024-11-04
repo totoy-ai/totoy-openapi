@@ -1,68 +1,52 @@
-name: Deploy OpenAPI Specification
+# Sample workflow for building and deploying a Jekyll site to GitHub Pages
+name: Deploy Jekyll with GitHub Pages dependencies preinstalled
+
 on:
+  # Runs on pushes targeting the default branch
   push:
     tags:
       - '*'
+
+  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 jobs:
+  # Build job
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Build with Jekyll
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./
+          destination: ./_site
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+
+  # Deployment job
   deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    needs: build
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Download Swagger UI
-        run: |
-          wget https://github.com/swagger-api/swagger-ui/archive/refs/tags/v5.11.3.zip
-          unzip v5.11.3.zip
-          mkdir -p _site
-          mv swagger-ui-5.11.3/dist/* _site/
-
-      - name: Copy OpenAPI spec
-        run: |
-          cp openapi.yaml _site/
-
-      - name: Update Swagger UI configuration
-        run: |
-          if [ ! -f _site/index.html ]; then
-            echo "Error: index.html not found"
-            ls -la _site/
-            exit 1
-          fi
-          
-          echo "Original content:"
-          cat _site/index.html
-          
-          # More specific sed pattern
-          sed -i 's|url: "https://petstore.swagger.io/v2/swagger.json"|url: "./openapi.yaml"|g' _site/index.html
-          
-          echo "Updated content:"
-          cat _site/index.html
-          
-          if ! grep -q "openapi.yaml" _site/index.html; then
-            echo "Error: Failed to update swagger configuration"
-            exit 1
-          fi
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
