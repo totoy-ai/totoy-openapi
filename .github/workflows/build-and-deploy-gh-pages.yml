@@ -36,7 +36,20 @@ jobs:
 
       - name: Update Swagger UI configuration
         run: |
-          sed -i 's|url: "https://petstore.swagger.io/v2/swagger.json"|url: "./openapi.yaml"|' _site/index.html
+          # Print the content before replacement
+          echo "Before replacement:"
+          grep -A 5 "SwaggerUIBundle" _site/index.html
+          
+          # More robust sed command
+          sed -i 's|https://petstore.swagger.io/v2/swagger.json|./openapi.yaml|g' _site/index.html
+          
+          # Print the content after replacement
+          echo "After replacement:"
+          grep -A 5 "SwaggerUIBundle" _site/index.html
+          
+          # Verify file exists and has content
+          ls -la _site/
+          cat _site/index.html | grep -A 10 "SwaggerUIBundle"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
