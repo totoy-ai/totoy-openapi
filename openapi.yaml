@@ -9,10 +9,9 @@ info:
   license:
     name: MIT
     url: https://raw.githubusercontent.com/totoy-ai/totoy-openapi/main/LICENSE
-  version: 0.2.1-alpha
+  version: 1.0.0-beta
 servers:
   - url: https://api.totoy.ai/v1
-    description: Production server
 security:
   - ApiKeyAuth: []
 tags:
@@ -24,6 +23,8 @@ tags:
     description: '`Sources` are used to upload documents (.pdf, .jpg or .png) or plain texts that can be used with features like `Explanation` or `Knowledge Bases.`'
   - name: Projects
     description: '`Projects` are used to group `Knowledge Bases` and `Explanations`.'
+  - name: Organization
+    description: Get information about your `Organization`.
 paths:
   /explanation:
     post:
@@ -31,8 +32,10 @@ paths:
       tags:
         - Explanation
       x-speakeasy-group: Explanation
-      summary: Explains a given document `Source` in any language in a specified output language and language level.
+      summary: Explains a document in any language
+      description: Explains a given document Source in any language in a specified output language and language level.
       requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -226,7 +229,8 @@ paths:
       tags:
         - Knowledge Bases
       x-speakeasy-group: KnowledgeBases.Sources
-      summary: Adds links to one or multiple Sources to the Knowledge Base as new Knowledge Base Sources.
+      summary: Adds Sources to a Knowledge Base.
+      description: Links one or multiple Sources to the Knowledge Base as new Knowledge Base Sources.
       parameters:
         - $ref: '#/components/parameters/knowledgeBaseIdParam'
       requestBody:
@@ -311,7 +315,8 @@ paths:
       tags:
         - Knowledge Bases
       x-speakeasy-group: KnowledgeBases.Sources
-      summary: Removes a Knowledge Base Source (the link to a Source) from a Knowledge Base.
+      summary: Removes a Knowledge Base Source from a Knowledge Base.
+      description: Removes a Knowledge Base Source (the link to a Source) from a Knowledge Base. This operation does not delete the Source itself.
       parameters:
         - $ref: '#/components/parameters/knowledgeBaseIdParam'
         - $ref: '#/components/parameters/sourceIdParam'
@@ -335,8 +340,8 @@ paths:
       tags:
         - Sources
       x-speakeasy-group: Sources
-      summary: Creates a Document or Text Source that can be added to Knowledge Bases as a Knowledge Base Source or used as context for an Explanation. Upload a file that can be used across various endpoints. Individual document files can be up to 100 MB, text Sources can be up to 1000000 characters long, and the size of all Sources uploaded by one organization can be up to 100 GB.
-      description: Document `Sources` are submitted as multipart/form-data and Text `Sources` as application/json.
+      summary: Creates a Document or Text Source
+      description: Creates a Document or Text Source that can be added to Knowledge Bases as a Knowledge Base Source or used as context for an Explanation. Upload a file that can be used across various endpoints. Individual document files can be up to 100 MB, text Sources can be up to 1000000 characters long, and the size of all Sources uploaded by one `Organization` can be up to 100 GB Document `Sources` are submitted as multipart/form-data and Text `Sources` as application/json.
       requestBody:
         required: true
         content:
@@ -478,7 +483,8 @@ paths:
       tags:
         - Sources
       x-speakeasy-group: Sources.Content
-      summary: Retrieves the content of a Source, either a plain text string or a document file.
+      summary: Retrieves the content of a Source.
+      description: The Source content can either be a plain text string or a document file.
       parameters:
         - $ref: '#/components/parameters/sourceIdParam'
       responses:
@@ -637,6 +643,27 @@ paths:
           $ref: '#/components/responses/general4XXResponse'
         5XX:
           $ref: '#/components/responses/general5XXResponse'
+  /organization:
+    get:
+      operationId: getOrganization
+      tags:
+        - Organization
+      x-speakeasy-group: Organization
+      summary: Returns the Organization details.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+              examples:
+                organization-example:
+                  $ref: '#/components/examples/organization-example'
+        4XX:
+          $ref: '#/components/responses/general4XXResponse'
+        5XX:
+          $ref: '#/components/responses/general5XXResponse'
 components:
   parameters:
     knowledgeBaseIdParam:
@@ -694,7 +721,7 @@ components:
         - it: Italian
         - pl: Polish
         - ro: Romanian
-        - sk: Slovakian
+        - sk: Slovak
         - sl: Slovenian
         - sr: Serbian
         - tl: Tagalog
@@ -790,7 +817,7 @@ components:
       title: Message
       description: |
         Represents a message within an `Explanation` or a `Knowledge Base Chat`.
-        For `Explanations` - An assistant message is either an initial `Explanation` for the document when no messages were provided in the request or an anwer to a user message in the provided conversation history.
+        For `Explanations` - An `assistant` message is either an initial `Explanation` for the document when no messages were provided in the request or an answer to a user message in the provided conversation history.
       type: object
       additionalProperties: false
       properties:
@@ -1142,12 +1169,12 @@ components:
         title:
           description: Title of the document or text.
           type: string
-          maxLength: 256
+          maxLength: 512
           example: Totoy Company Overview
         document_file_name:
           description: The file name of a `Source` document.
           type: string
-          maxLength: 256
+          maxLength: 255
           nullable: true
           example: totoy-company-overview.pdf
         backlink:
@@ -1188,6 +1215,18 @@ components:
             - kb_feMfJbeqbAEj4u8K5HqmKpUbY
             - kb_7eMfJbeqbAEj4u8K5HqmKpUbY
           maxItems: 1500
+        status:
+          description: The parsing status of the Document Source. The status `completed` indicates that the source is ready for use. The status parameter is only available for Document Sources.
+          type: string
+          enum:
+            - in_progress
+            - completed
+            - failed
+          example: in_progress
+        pages:
+          description: The number of pages of the Document Source. The pages parameter is only available for Document Sources.
+          type: integer
+          example: 27
       required:
         - source_id
         - source_type
@@ -1208,6 +1247,14 @@ components:
               pattern: ^kb_[a-zA-Z0-9]{25}$
               type: string
               example: kb_feMfJbeqbAEj4u8K5HqmKpUbY
+            status:
+              description: The indexing status of the Knowledge Base Source. The status `completed` indicates that the source is ready for use.
+              type: string
+              enum:
+                - in_progress
+                - completed
+                - failed
+              example: completed
           required:
             - knowledge_base_id
     KnowledgeBaseSourcesList:
@@ -1237,6 +1284,7 @@ components:
             custom_metadata:
               internal_tag: general_documents
             knowledge_base_id: kb_feMfJbeqbAEj4u8K5HqmKpUbY
+            status: completed
           - source_id: src_qoY7rSGkiWtn4NP8kPXc7xzrq
             source_type: text
             bytes: 44
@@ -1250,6 +1298,7 @@ components:
             custom_metadata:
               internal_tag: text_snippets
             knowledge_base_id: kb_feMfJbeqbAEj4u8K5HqmKpUbY
+            status: completed
     AddKnowledgeBaseSourceRequest:
       title: AddKnowledgeBaseSourceRequest
       type: object
@@ -1335,6 +1384,7 @@ components:
             valid_until: '2026-12-31T23:59:59Z'
             custom_metadata:
               internal_tag: general_documents
+            status: completed
           - source_id: src_qoY7rSGkiWtn4NP8kPXc7xzrq
             source_type: text
             bytes: 44
@@ -1361,7 +1411,7 @@ components:
         title:
           description: Title of the document.
           type: string
-          maxLength: 256
+          maxLength: 512
           example: Totoy Company Overview
         backlink:
           description: A url to the document source that can be used by clients to link back to the original document.
@@ -1404,7 +1454,7 @@ components:
         title:
           description: Title of the text `Source`.
           type: string
-          maxLength: 256
+          maxLength: 512
           nullable: true
           example: Foundation Date
         backlink:
@@ -1468,7 +1518,7 @@ components:
         title:
           description: Title of the document.
           type: string
-          maxLength: 256
+          maxLength: 512
           example: Totoy Company Overview
         backlink:
           description: A url to the document source that can be used by clients to link back to the original document.
@@ -1510,7 +1560,7 @@ components:
         title:
           description: Title of the text `Source`.
           type: string
-          maxLength: 256
+          maxLength: 512
           example: Foundation Date
         backlink:
           description: A url to the text `Source` that can be used by clients to link back to the original text.
@@ -1582,7 +1632,7 @@ components:
             maxLength: 29
             pattern: ^src_[a-zA-Z0-9]{25}$
             description: Unique identifier for a `Source` that is assigned to the `Project`.
-          maxItems: 1500
+          maxItems: 10000
           example:
             - src_oXiYDg8QOc9JsOk86idRXiywD
             - src_qoY7rSGkiWtn4NP8kPXc7xzrq
@@ -1590,6 +1640,69 @@ components:
           description: Whether the `Project` is the default `Project` for the `Organization`. The default `Project` is used when no `Project` is specified in an API request. The default `Project` cannot be deleted.
           type: boolean
           example: false
+        assistant_messages_usage:
+          description: The number of `Messages` with the role `assistant`, used by the `Project` in the current billing period.
+          type: object
+          properties:
+            knowledge_bases_chat:
+              description: The number of `Knowledge Base Chat Messages` with the role `assistant`, used by the `Project` in the current billing period.
+              type: integer
+              example: 1354
+            explanations:
+              description: The number of `Explanation Messages` with the role `assistant`, used by the `Project` in the current billing period.
+              type: integer
+              example: 1234
+            total:
+              description: The total number of `Messages` with the role `assistant`, used by the `Project` in the current billing period.
+              type: integer
+              example: 2588
+          nullable: true
+          example:
+            knowledge_bases_chat: 1354
+            explanations: 1234
+            total: 2588
+        assistant_messages_limit:
+          description: The maximum number of `Messages` with the role `assistant` allowed for the `Project` in the current billing period. The combined quota of all `Projects` cannot exceed `Organization` quota.
+          type: integer
+          example: 10000
+          nullable: true
+          default: null
+        assistant_messages_renewal:
+          description: The date-time when the `assistant` messages limit will be renewed.
+          type: string
+          example: '2025-08-01T00:00:00Z'
+          nullable: true
+        document_sources_pages:
+          description: The number of `Document Sources` pages stored in the `Project`.
+          type: integer
+          example: 1257
+          nullable: true
+        document_sources_pages_limit:
+          description: The maximum number `Document Sources` pages stored in the `Project`. The `Projects'` combined quota cannot exceed `Organization` quota.
+          type: integer
+          example: 5000
+          nullable: true
+          default: null
+        text_sources:
+          description: The amount of `Text Sources` stored in the `Project`.
+          type: integer
+          example: 2567
+          nullable: true
+        text_sources_limit:
+          description: The maximum number of `Text Sources` allowed for the `Project`. The `Projects'` combined quota cannot exceed `Organization` quota.
+          type: integer
+          example: 5000
+          nullable: true
+          default: null
+        limit_type:
+          description: Whether the limit is a hard limit, a soft limit, or there is no limit at all. Hard limits will block the service if the limit is reached. Soft limits are for informational purposes only. None means that there is no limit on `Project` level.
+          type: string
+          enum:
+            - hard
+            - soft
+            - none
+          example: soft
+          default: none
       required:
         - project_id
         - name
@@ -1638,6 +1751,33 @@ components:
           type: string
           maxLength: 256
           example: Totoy GmbH Project
+        assistant_messages_limit:
+          description: The maximum number of `Messages` with the role `assistant` allowed for the `Project` in the current billing period. The combined quota of all `Projects` cannot exceed `Organization` quota.
+          type: integer
+          example: 10000
+          nullable: true
+          default: null
+        document_sources_pages_limit:
+          description: The maximum number of `Document Sources` pages stored for the `Project`. The `Projects'` combined limits cannot exceed `Organization` limit.
+          type: integer
+          example: 5000
+          nullable: true
+          default: null
+        text_sources_limit:
+          description: The maximum number of `Text Sources` allowed for the `Project`. The `Projects'` combined limits cannot exceed `Organization` limit.
+          type: integer
+          example: 5000
+          nullable: true
+          default: null
+        limit_type:
+          description: Whether the limit is a hard limit, a soft limit, or there is no limit at all. Hard limits will block the service if the limit is reached. Soft limits are for informational purposes only. None means that there is no limit on `Project` level.
+          type: string
+          enum:
+            - hard
+            - soft
+            - none
+          example: soft
+          default: none
       required:
         - name
     DeleteProjectResponse:
@@ -1668,7 +1808,7 @@ components:
             maxLength: 29
             pattern: ^src_[a-zA-Z0-9]{25}$
             description: Unique identifier for a `Source` that was assigned to the `Project`.
-          maxItems: 1500
+          maxItems: 10000
           example:
             - src_oXiYDg8QOc9JsOk86idRXiywD
             - src_qoY7rSGkiWtn4NP8kPXc7xzrq
@@ -1692,6 +1832,95 @@ components:
           type: string
           maxLength: 256
           example: Totoy GmbH Project
+        assistant_messages_limit:
+          description: The maximum number of `Messages` with the role `assistant` allowed for the `Project` in the current billing period. The combined quota of all `Projects` cannot exceed `Organization` quota.
+          type: integer
+          example: 10000
+          nullable: true
+          default: null
+        document_sources_pages_limit:
+          description: The maximum number of `Document Sources` pages stored for the `Project`. The `Projects'` combined limits cannot exceed `Organization` limit.
+          type: integer
+          example: 5000
+          nullable: true
+          default: null
+        text_sources_limit:
+          description: The maximum number of `Text Sources` allowed for the `Project`. The `Projects'` combined limits cannot exceed `Organization` limit.
+          type: integer
+          example: 5000
+          nullable: true
+          default: null
+        limit_type:
+          description: Whether the limit is a hard limit, a soft limit, or there is no limit at all. Hard limits will block the service if the limit is reached. Soft limits are for informational purposes only. None means that there is no limit on `Project` level.
+          type: string
+          enum:
+            - hard
+            - soft
+            - none
+          example: soft
+          default: none
+    Organization:
+      title: Organization
+      description: The `Organization` object represents an organization in the system.
+      type: object
+      additionalProperties: false
+      properties:
+        organization_id:
+          description: The unique identifier of an `Organization`
+          maxLength: 29
+          pattern: ^org_[a-zA-Z0-9]{25}$
+          type: string
+          example: org_sjd823ndpaxy8223ndm0paq53
+        name:
+          description: The `Organization's` name.
+          type: string
+          maxLength: 256
+          example: Totoy GmbH
+        projects_limit:
+          description: The maximum number of `Projects` allowed in the `Organization`.
+          type: integer
+          example: 100
+          nullable: true
+        knowledge_bases_limit:
+          description: The maximum number of `Knowledge Bases` allowed in the `Organization`.
+          type: integer
+          example: 100
+          nullable: true
+        document_sources_pages_limit:
+          description: The maximum number of `Document Sources` pages stored for the `Project`. The `Projects'` combined limits cannot exceed this limit.
+          type: integer
+          example: 100000
+          nullable: true
+        text_sources_limit:
+          description: The maximum number of `Text Sources` allowed for the `Project`. The `Projects'` combined quota cannot exceed this limit.
+          type: integer
+          example: 5000
+          nullable: true
+        assistant_message_quota:
+          description: The total number of `Messages` with the role `assistant`, allocated for the current billing period. The `Projects'` combined limits cannot exceed this quota.
+          type: integer
+          example: 100000
+          nullable: true
+        assistant_message_count:
+          description: The number of `Messages` with the role `assistant` used in the current billing period.
+          type: integer
+          example: 13542
+        assistant_message_quota_remaining:
+          description: The remaining number of `Messages` with the role `assistant` available in the current billing period.
+          type: integer
+          example: 86458
+          nullable: true
+        limit_type:
+          description: Whether the limit is a hard limit, a soft limit, or there is no limit at all. Hard limits will block the service if the limit is reached. Soft limits are for informational purposes only. None means that there is no limit on `Project` level.
+          type: string
+          enum:
+            - hard
+            - soft
+            - none
+          example: soft
+      required:
+        - organization_id
+        - name
   examples:
     explanation-request-example-1:
       summary: Explanation Request Example 1
@@ -1713,9 +1942,9 @@ components:
             content: |-
               Hey!
               This is a letter from the Austrian tax office.
-              They are informing you about your obligation to submit quarterly VAT returns if your annual turnover is more than â‚¬35,000.
+              They are informing you about your obligation to submit quarterly VAT returns if your annual turnover is more than €35,000.
               However, if you submit a VAT return for the month of January on time, you can choose to submit monthly returns instead.
-              If your annual turnover is more than â‚¬100,000, you are required to submit monthly VAT returns.
+              If your annual turnover is more than €100,000, you are required to submit monthly VAT returns.
               Since your VAT returns and payments for 2021 do not cover the entire period, they are asking you to fill out the enclosed form to provide your actual annual turnover.
               This is important to avoid sending you incorrect reminders.
               If you have any questions, you can contact the service center at 050 233 233.
@@ -1736,9 +1965,9 @@ components:
           content: |-
             Hey!
             This is a letter from the Austrian tax office.
-            They are informing you about your obligation to submit quarterly VAT returns if your annual turnover is more than â‚¬35,000.
+            They are informing you about your obligation to submit quarterly VAT returns if your annual turnover is more than €35,000.
             However, if you submit a VAT return for the month of January on time, you can choose to submit monthly returns instead.
-            If your annual turnover is more than â‚¬100,000, you are required to submit monthly VAT returns.
+            If your annual turnover is more than €100,000, you are required to submit monthly VAT returns.
             Since your VAT returns and payments for 2021 do not cover the entire period, they are asking you to fill out the enclosed form to provide your actual annual turnover.
             This is important to avoid sending you incorrect reminders.
             If you have any questions, you can contact the service center at 050 233 233.
@@ -1918,6 +2147,7 @@ components:
             custom_metadata:
               internal_tag: general_documents
             knowledge_base_id: kb_feMfJbeqbAEj4u8K5HqmKpUbY
+            status: completed
           - source_id: src_qoY7rSGkiWtn4NP8kPXc7xzrq
             source_type: text
             bytes: 44
@@ -1932,6 +2162,7 @@ components:
             custom_metadata:
               internal_tag: text_snippets
             knowledge_base_id: kb_feMfJbeqbAEj4u8K5HqmKpUbY
+            status: completed
     add-knowledge-base-source-request-example:
       summary: Add Knowledge Base Source Request Example
       description: An example for adding a `Source` to a `Knowledge Base` as a `Knowledge Base Source`.
@@ -1962,6 +2193,7 @@ components:
         custom_metadata:
           internal_tag: general_documents
         knowledge_base_id: kb_feMfJbeqbAEj4u8K5HqmKpUbY
+        status: completed
     source-id-example:
       summary: Source ID Example 2
       description: An example for a `source_id` for another PDF document source.
@@ -1994,6 +2226,8 @@ components:
             knowledge_base_ids:
               - kb_feMfJbeqbAEj4u8K5HqmKpUbY
               - kb_2eMfJbeqbAEj4u8K5HqmKpUbY
+            status: completed
+            pages: 27
           - source_id: src_qoY7rSGkiWtn4NP8kPXc7xzrq
             source_type: text
             bytes: 44
@@ -2052,6 +2286,8 @@ components:
         knowledge_base_ids:
           - kb_feMfJbeqbAEj4u8K5HqmKpUbY
           - kb_2eMfJbeqbAEj4u8K5HqmKpUbY
+        status: completed
+        pages: 27
     text-source-example-1:
       summary: Text Source Example 1
       description: An example for a text `Source`.
@@ -2108,6 +2344,8 @@ components:
         knowledge_base_ids:
           - kb_feMfJbeqbAEj4u8K5HqmKpUbY
           - kb_2eMfJbeqbAEj4u8K5HqmKpUbY
+        status: completed
+        pages: 27
     text-source-example-2:
       summary: Text Source Example 1
       description: An example for a text `Source`, where `text_content` was updated.
@@ -2144,6 +2382,17 @@ components:
               - src_oXiYDg8QOc9JsOk86idRXiywD
               - src_qoY7rSGkiWtn4NP8kPXc7xzrq
             is_default: false
+            assistant_messages_usage:
+              knowledge_bases_chat: 1354
+              explanations: 1234
+              total: 2588
+            assistant_messages_limit: 10000
+            assistant_messages_renewal: '2025-08-01T00:00:00Z'
+            document_sources_pages: 1257
+            document_sources_pages_limit: 5000
+            text_sources: 2534
+            text_sources_limit: 5000
+            limit_type: soft
           - project_id: pj_bxW8jnfoMbRQow6dlHmPIRCA2
             name: Default Project
             created_at: '2023-07-05T12:34:13Z'
@@ -2151,11 +2400,26 @@ components:
             knowledge_base_ids: []
             source_ids: []
             is_default: true
+            assistant_messages_usage:
+              knowledge_bases_chat: 1435
+              explanations: 5674
+              total: 7109
+            assistant_messages_limit: 10000
+            assistant_messages_renewal: '2025-08-01T00:00:00Z'
+            document_sources_pages: 2534
+            document_sources_pages_limit: 5000
+            text_sources: 3765
+            text_sources_limit: 5000
+            limit_type: soft
     create-project-request-example:
       summary: Create Project Request Example
       description: An example for creating a `Project`.
       value:
         name: Totoy GmbH Project
+        assistant_messages_limit: 10000
+        document_sources_pages_limit: 5000
+        text_sources_limit: 5000
+        limit_type: soft
     project-example-1:
       summary: Project Example 1
       description: An example for a `Project`.
@@ -2167,6 +2431,17 @@ components:
         knowledge_base_ids: []
         source_ids: []
         is_default: false
+        assistant_messages_usage:
+          knowledge_bases_chat: 1354
+          explanations: 1234
+          total: 2588
+        assistant_messages_limit: 10000
+        assistant_messages_renewal: '2025-08-01T00:00:00Z'
+        document_sources_pages: 1257
+        document_sources_pages_limit: 5000
+        text_sources: 2534
+        text_sources_limit: 5000
+        limit_type: soft
     project-id-example:
       summary: Project ID Example
       description: An example for a `project_id`.
@@ -2188,6 +2463,10 @@ components:
       description: An example for updating the name of a `Project`.
       value:
         name: Totoy LLC Project
+        assistant_messages_limit: 10000
+        document_sources_pages_limit: 5000
+        text_sources_limit: 5000
+        limit_type: soft
     project-example-2:
       summary: Project Example 2
       description: An example for a modified `Project`.
@@ -2203,6 +2482,29 @@ components:
           - src_oXiYDg8QOc9JsOk86idRXiywD
           - src_qoY7rSGkiWtn4NP8kPXc7xzrq
         is_default: false
+        assistant_messages_usage:
+          knowledge_bases_chat: 1354
+          explanations: 1234
+          total: 2588
+        assistant_messages_limit: 10000
+        assistant_messages_renewal: '2025-08-01T00:00:00Z'
+        document_sources_pages: 1257
+        document_sources_pages_limit: 5000
+        text_sources: 2534
+        text_sources_limit: 5000
+        limit_type: soft
+    organization-example:
+      summary: Organization Example
+      description: An example for a `Organization`.
+      value:
+        name: Totoy GmbH
+        organization_id: org_sjd823ndpaxy8223ndm0paq53
+        projects_limit: 100
+        knowledge_bases_limit: 100
+        document_sources_pages_limit: 100000
+        assistant_message_quota: 100000
+        assistant_message_count: 13542
+        assistant_message_quota_remaining: 86458
   securitySchemes:
     ApiKeyAuth:
       type: http
