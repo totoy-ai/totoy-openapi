@@ -9,7 +9,7 @@ info:
   license:
     name: MIT
     url: https://raw.githubusercontent.com/totoy-ai/totoy-openapi/main/LICENSE
-  version: 1.0.0-beta
+  version: 1.0.0-bet
 servers:
   - url: https://api.totoy.ai/v1
 security:
