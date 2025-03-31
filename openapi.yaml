@@ -9,7 +9,7 @@ info:
   license:
     name: MIT
     url: https://raw.githubusercontent.com/totoy-ai/totoy-openapi/main/LICENSE
-  version: 1.0.0-beta
+  version: 1.1.1
 servers:
   - url: https://api.totoy.ai/v1
 security:
@@ -25,6 +25,10 @@ tags:
     description: '`Projects` are used to group `Knowledge Bases` and `Explanations`.'
   - name: Organization
     description: Get information about your `Organization`.
+  - name: Extraction
+    description: Extract structured data from any document. Use prebuilt models or define custom fields for extraction.
+  - name: Classification
+    description: Classify documents into labels based on their content. Use prebuilt models or define custom labels for classification.
 paths:
   /explanation:
     post:
@@ -32,7 +36,7 @@ paths:
       tags:
         - Explanation
       x-speakeasy-group: Explanation
-      summary: Explains a document in any language
+      summary: Classifys a Document in Candidate labels
       description: Explains a given document Source in any language in a specified output language and language level.
       requestBody:
         required: true
@@ -665,6 +669,74 @@ paths:
           $ref: '#/components/responses/general4XXResponse'
         5XX:
           $ref: '#/components/responses/general5XXResponse'
+  /extraction:
+    post:
+      operationId: createExtraction
+      tags:
+        - Extraction
+      x-speakeasy-group: Extraction
+      summary: Extracts structured data from a Document
+      description: Extracts data fields from a document and outputs recommendations whether a field should be reviewed for validation. Use a prebuilt model or define custom fields for extraction.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtractionRequest'
+            examples:
+              extraction-request-example-1:
+                $ref: '#/components/examples/extraction-request-example-1'
+              extraction-request-example-2:
+                $ref: '#/components/examples/extraction-request-example-2'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ExtractionResponse'
+                  - $ref: '#/components/schemas/ExtractionResponseRadiologyReferralExtractionGerman'
+              examples:
+                extraction-response-radiology-referral-extraction-german-example-1:
+                  $ref: '#/components/examples/extraction-response-radiology-referral-extraction-german-example-1'
+                extraction-response-example-1:
+                  $ref: '#/components/examples/extraction-response-example-1'
+        4XX:
+          $ref: '#/components/responses/general4XXResponse'
+        5XX:
+          $ref: '#/components/responses/general5XXResponse'
+  /classification:
+    post:
+      operationId: createClassification
+      tags:
+        - Classification
+      x-speakeasy-group: Classification
+      summary: Classifies a Document into labels based on its content.
+      description: Classifies documents into labels based on its content. Use prebuilt models or define custom labels for classification.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassificationRequest'
+            examples:
+              classification-request-example-1:
+                $ref: '#/components/examples/classification-request-example-1'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassificationResponseRadiologyDocumentClassificationGerman'
+              examples:
+                classification-response-radiology-document-classification-german-example-1:
+                  $ref: '#/components/examples/classification-response-radiology-document-classification-german-example-1'
+        4XX:
+          $ref: '#/components/responses/general4XXResponse'
+        5XX:
+          $ref: '#/components/responses/general5XXResponse'
 components:
   parameters:
     knowledgeBaseIdParam:
@@ -728,6 +800,7 @@ components:
         - tl: Tagalog
         - tr: Turkish
         - uk: Ukrainian
+        - zh: Mandarin
       type: string
       enum:
         - ar
@@ -749,6 +822,7 @@ components:
         - tl
         - tr
         - uk
+        - zh
       example: en
     LanguageLevel:
       title: LanguageLevel
@@ -1893,6 +1967,384 @@ components:
       required:
         - organization_id
         - name
+    ExtractionRequest:
+      title: ExtractionRequest
+      type: object
+      additionalProperties: false
+      properties:
+        model:
+          description: The name of the model that will be used for the extraction. A model name without a date is an alias to the latest version of that model, i.e. `rre-de` always points to the latest version of `rre-de`.
+          type: string
+          enum:
+            - rre-de-2025-02-14
+            - rre-de-2025-03-31
+            - rre-de
+          example: rre-de-2025-03-31
+        document:
+          description: Base64-encoded contents of a document (PDF, JPG or PNG)
+          type: string
+          format: byte
+          example: JVBERi0xLjUNCiW1tbW1DQox...
+        expand_abbreviations:
+          description: If set to true, the extraction will expand abbreviations in the extracted fields.
+          type: boolean
+          default: false
+          example: false
+      required:
+        - document
+        - model
+    Review:
+      title: Review
+      type: object
+      description: Review recommendation for a specific extracted field
+      properties:
+        reasoning:
+          type: string
+          description: Explanation for the review decision
+        recommended:
+          type: boolean
+          description: Indicates whether a review is recommended
+      required:
+        - reasoning
+        - recommended
+    ExtractionField:
+      title: ExtractionField
+      type: object
+      description: Represents the content and review recommendation for a single extracted field.
+      properties:
+        content:
+          oneOf:
+            - type: string
+              description: The extracted content for this field.
+              example: Vienna
+              nullable: true
+            - type: integer
+              description: The extracted content for this field as an integer.
+              example: 42
+              nullable: true
+            - type: number
+              format: float
+              description: The extracted content for this field as a float.
+              example: 1
+              nullable: true
+            - type: boolean
+              description: The extracted content for this field as a boolean.
+              example: true
+              nullable: true
+            - type: string
+              format: date-time
+              description: The extracted content for this field as a datetime string, in ISO 8601 format.
+              example: '2025-03-31T14:00:00Z'
+              nullable: true
+            - type: string
+              format: date
+              description: The extracted content for this field as a date string, in ISO 8601 format.
+              example: '2025-03-31'
+              nullable: true
+        review:
+          $ref: '#/components/schemas/Review'
+      nullable: true
+      required:
+        - content
+        - review
+    ExtractionResponse:
+      title: ExtractionResponse
+      type: object
+      properties:
+        fields:
+          description: The extracted data fields and review recommendations. Each key represents a field name, and the value conforms to the `ExtractionField` schema.
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ExtractionField'
+          example:
+            referral_diagnosis:
+              content: C61 - Castration-resistant prostate cancer in progress, N28.1 - Right renal cyst, F52.2 - Erectile dysfunction
+              review:
+                reasoning: The referral diagnosis is clearly stated with multiple diagnoses. The referral is complete and no review is needed.
+                recommended: false
+            ordered_procedure:
+              content: MRI of the prostate, CT of the abdomen, PSA test
+              review:
+                reasoning: The ordered procedures are clearly stated. No review is needed.
+                recommended: false
+      required:
+        - fields
+    ExtractionFieldString:
+      title: ExtractionFieldString
+      type: object
+      description: Represents the content and review recommendation for a single extracted field with content of type string.
+      properties:
+        content:
+          type: string
+          description: The extracted content for this field.
+          example: Vienna
+          nullable: true
+        review:
+          $ref: '#/components/schemas/Review'
+      required:
+        - content
+        - review
+    ExtractionFieldDate:
+      title: ExtractionFieldDate
+      type: object
+      description: Represents the content and review recommendation for a single extracted field with content of type date string.
+      properties:
+        content:
+          type: string
+          format: date
+          description: The extracted content for this field as a date string, in ISO 8601 format.
+          example: '2025-03-31'
+          nullable: true
+        review:
+          $ref: '#/components/schemas/Review'
+      nullable: true
+      required:
+        - content
+        - review
+    ExtractionFieldRadiologyReferralExtractionGermanGender:
+      title: ExtractionFieldRadiologyReferralExtractionGermanGender
+      type: object
+      description: Represents the content and review recommendation for the patient_gender field in a German radiology referral extraction.
+      properties:
+        content:
+          type: string
+          description: The extracted content for this field.
+          example: Vienna
+          enum:
+            - Herr
+            - Frau
+            - Divers
+          nullable: true
+        review:
+          $ref: '#/components/schemas/Review'
+      nullable: true
+      required:
+        - content
+        - review
+    ExtractionFieldRadiologyReferralExtractionGermanInsuranceProvider:
+      title: ExtractionFieldRadiologyReferralExtractionGermanInsuranceProvider
+      type: object
+      description: Represents the content and review recommendation for the insurance_provider field in a German radiology referral extraction.
+      properties:
+        content:
+          type: string
+          description: The extracted content for this field.
+          example: SVS-GW
+          enum:
+            - ÖGK-W
+            - ÖGK-N
+            - ÖGK-B
+            - ÖGK-O
+            - ÖGK-ST
+            - ÖGK-K
+            - ÖGK-S
+            - ÖGK-T
+            - ÖGK-V
+            - BVAEB-EB
+            - BVAEB-OEB
+            - SVS-GW
+            - SVS-LW
+            - KFA-Wien
+            - KFA-Baden
+            - KFA-Linz
+            - KUF-Gem
+            - KUF-Land
+            - KUF-Lehrer
+            - KFA-Steyr
+            - KFA-Wels
+            - KFA-Graz
+            - KFA-Villach
+            - KFA-Salzburg
+            - KFA-Hallein
+            - KUFT-Gem
+            - KUFT-Land
+            - KUFT-Lehrer
+            - MA-Wien
+            - LAND-OÖ
+            - MA-Steyr
+            - Privat
+          nullable: true
+        review:
+          $ref: '#/components/schemas/Review'
+      nullable: true
+      required:
+        - content
+        - review
+    ExtractionFieldRadiologyReferralExtractionGermanEmploymentStatus:
+      title: ExtractionFieldRadiologyReferralExtractionEmploymentStatus
+      type: object
+      description: Represents the content and review recommendation for the employment_status field in a German radiology referral extraction.
+      properties:
+        content:
+          type: integer
+          description: The extracted content for this field.
+          example: 1
+          enum:
+            - 1
+            - 5
+          nullable: true
+        review:
+          $ref: '#/components/schemas/Review'
+      nullable: true
+      required:
+        - content
+        - review
+    ExtractionResponseRadiologyReferralExtractionGerman:
+      title: ExtractionResponseRadiologyReferralExtractionGerman
+      type: object
+      properties:
+        fields:
+          description: The extracted data fields and review recommendations for a Radiology Referral Extraction.
+          additionalProperties: false
+          type: object
+          properties:
+            patient_first_name:
+              $ref: '#/components/schemas/ExtractionFieldString'
+            patient_last_name:
+              $ref: '#/components/schemas/ExtractionFieldString'
+            patient_birth_date:
+              $ref: '#/components/schemas/ExtractionFieldDate'
+            patient_social_security_number:
+              $ref: '#/components/schemas/ExtractionFieldString'
+            patient_gender:
+              $ref: '#/components/schemas/ExtractionFieldRadiologyReferralExtractionGermanGender'
+            patient_title:
+              $ref: '#/components/schemas/ExtractionFieldString'
+            patient_address:
+              $ref: '#/components/schemas/ExtractionFieldString'
+            patient_city:
+              $ref: '#/components/schemas/ExtractionFieldString'
+            patient_postal_code:
+              $ref: '#/components/schemas/ExtractionFieldString'
+            insurance_provider:
+              $ref: '#/components/schemas/ExtractionFieldRadiologyReferralExtractionGermanInsuranceProvider'
+            employment_status:
+              $ref: '#/components/schemas/ExtractionFieldRadiologyReferralExtractionGermanEmploymentStatus'
+            insured_first_name:
+              $ref: '#/components/schemas/ExtractionFieldString'
+            insured_last_name:
+              $ref: '#/components/schemas/ExtractionFieldString'
+            insured_birth_date:
+              $ref: '#/components/schemas/ExtractionFieldDate'
+            insured_social_security_number:
+              $ref: '#/components/schemas/ExtractionFieldString'
+            employer_name:
+              $ref: '#/components/schemas/ExtractionFieldString'
+            employer_address:
+              $ref: '#/components/schemas/ExtractionFieldString'
+            employer_city:
+              $ref: '#/components/schemas/ExtractionFieldString'
+            employer_postal_code:
+              $ref: '#/components/schemas/ExtractionFieldString'
+            referral_date:
+              $ref: '#/components/schemas/ExtractionFieldDate'
+            referral_diagnosis:
+              $ref: '#/components/schemas/ExtractionFieldString'
+            clinical_symptoms:
+              $ref: '#/components/schemas/ExtractionFieldString'
+            ordered_procedure:
+              $ref: '#/components/schemas/ExtractionFieldString'
+            previous_findings:
+              $ref: '#/components/schemas/ExtractionFieldString'
+            referrer_first_name:
+              $ref: '#/components/schemas/ExtractionFieldString'
+            referrer_last_name:
+              $ref: '#/components/schemas/ExtractionFieldString'
+            referrer_title:
+              $ref: '#/components/schemas/ExtractionFieldString'
+            referrer_address:
+              $ref: '#/components/schemas/ExtractionFieldString'
+            referrer_city:
+              $ref: '#/components/schemas/ExtractionFieldString'
+            referrer_postal_code:
+              $ref: '#/components/schemas/ExtractionFieldString'
+            partner_contract_number:
+              $ref: '#/components/schemas/ExtractionFieldString'
+            report_delivery_address:
+              $ref: '#/components/schemas/ExtractionFieldString'
+          example:
+            referral_diagnosis:
+              content: C61 - Castration-resistant prostate cancer in progress, N28.1 - Right renal cyst, F52.2 - Erectile dysfunction
+              review:
+                reasoning: The referral diagnosis is clearly stated with multiple diagnoses. The referral is complete and no review is needed.
+                recommended: false
+            ordered_procedure:
+              content: MRI of the prostate, CT of the abdomen, PSA test
+              review:
+                reasoning: The ordered procedures are clearly stated. No review is needed.
+                recommended: false
+      required:
+        - fields
+    ClassificationRequest:
+      title: ClassificationRequest
+      type: object
+      additionalProperties: false
+      properties:
+        model:
+          description: The name of the model that will be used for the Classification. A model name without a date is an alias to the latest version of that model, i.e. `rdc-de` always points to the latest version of `rdc-de`.
+          type: string
+          example: rdc-de-2025-02-14
+          enum:
+            - rdc-de-2025-02-14
+            - rdc-de
+        document:
+          description: Base64-encoded contents of a document (PDF, JPG or PNG)
+          type: string
+          format: byte
+          example: JVBERi0xLjUNCiW1tbW1DQox...
+      example:
+        model: rdc-de-2025-02-14
+        document: JVBERi0xLjUNCiW1tbW1DQox...
+      required:
+        - document
+        - model
+    ClassificationResponseRadiologyDocumentClassificationGerman:
+      title: ClassificationResponseRadiologyDocumentClassificationGerman
+      properties:
+        label:
+          type: object
+          description: The label
+          properties:
+            reasoning:
+              type: string
+              description: Explanation for the review decision
+              example: Considering the title 'MR-Zuweisung' and the contents, particularly the fact that it is a referral for MRI examination due to specific clinical symptoms and conditions noted, the most appropriate classification is 'Zuweisung'. The document fits perfectly as a referral for imaging based on diagnostic requirements set by a physician.
+            prediction:
+              type: string
+              description: The predicted label
+              example: Zuweisung
+              enum:
+                - Zuweisung
+                - Blutbefund
+                - Anamnesebogen
+                - Vorbefund
+                - Arzt/Patientenbrief
+                - Bewilligung
+                - Implantats Ausweis
+                - Ausweis
+                - E-Card/ERW Card
+                - Einverständniserklärung/DSGVO/Minderjährige
+                - Patientendatenblatt
+                - Einladungsschreiben Mammo Screening
+        review:
+          type: object
+          description: Review recommendations for this field
+          properties:
+            reasoning:
+              type: string
+              description: Explanation for the review decision
+              example: The document is clearly legible and formatted as a professional referral, indicating no need for further review. The content is straightforward and matches the 'Zuweisung' classification.
+            recommended:
+              type: boolean
+              description: Indicates whether a review is recommended
+              example: false
+      example:
+        label:
+          reasoning: Considering the title 'MR-Zuweisung' and the contents, particularly the fact that it is a referral for MRI examination due to specific clinical symptoms and conditions noted, the most appropriate classification is 'Zuweisung'. The document fits perfectly as a referral for imaging based on diagnostic requirements set by a physician.
+          prediction: Anamnesebogen
+        review:
+          reasoning: The document is clearly legible and formatted as a professional referral, indicating no need for further review. The content is straightforward and matches the 'Zuweisung' classification.
+          recommended: false
   examples:
     explanation-request-example-1:
       summary: Explanation Request Example 1
@@ -2461,6 +2913,216 @@ components:
           knowledge_bases: 7
           text_sources: 3756
           document_sources_pages: 2534
+    extraction-request-example-1:
+      summary: Extraction Request Example rre-de-2025-03-31
+      description: An example for an `Extraction` request with the `model` `rre-de-2025-03-31` for a base64-encoded JPG image, with `expand_abbreviations` set to `true`
+      value:
+        model: rre-de-2025-03-31
+        document: JVBERi0xLjUNCiW1tbW1DQox...
+        expand_abbreviations: true
+    extraction-request-example-2:
+      summary: Extraction Request Example rre-de-2025-02-14
+      description: An example for an `Extraction` request with the `model` `rre-de-2025-02-14` for a base64-encoded JPG image, with `expand_abbreviations` set to `true`.
+      value:
+        model: rre-de-2025-02-14
+        document: JVBERi0xLjUNCiW1tbW1DQox...
+        expand_abbreviations: false
+    extraction-response-radiology-referral-extraction-german-example-1:
+      summary: Extraction Response Example rre-de-2025-03-31
+      description: An example for an `Extraction` response for the model `rre-de-2025-03-31`.
+      value:
+        fields:
+          patient_first_name:
+            content: Maria
+            review:
+              reasoning: The first name 'Maria' is clearly visible and legible in the document.
+              recommended: false
+          patient_last_name:
+            content: Musterfrau
+            review:
+              reasoning: The last name 'Musterfrau' is clearly visible and legible in the document.
+              recommended: false
+          patient_birth_date:
+            content: '1990-02-01'
+            review:
+              reasoning: The birth date '01.02.1990' is clearly visible and legible in the document.
+              recommended: false
+          patient_social_security_number:
+            content: '123401021990'
+            review:
+              reasoning: The social security number '1234 01 02 1990' is clearly visible and legible in the document, with spaces removed as per instructions.
+              recommended: false
+          patient_gender:
+            content: Frau
+            review:
+              reasoning: The gender is explicitly mentioned as 'Frau' in the document.
+              recommended: false
+          patient_title:
+            content: null
+            review:
+              reasoning: No title is mentioned for the patient in the document.
+              recommended: true
+          patient_address:
+            content: Musterstraße 1/2
+            review:
+              reasoning: The address 'Musterstraße 1/2' is clearly visible and legible in the document.
+              recommended: false
+          patient_city:
+            content: Wien
+            review:
+              reasoning: The city 'Wien' is clearly visible and legible in the document.
+              recommended: false
+          patient_postal_code:
+            content: '1230'
+            review:
+              reasoning: The postal code '1230' is clearly visible and legible in the document.
+              recommended: false
+          insurance_provider:
+            content: SVS-GW
+            review:
+              reasoning: The insurance provider 'SVS-GW' is clearly marked in the document.
+              recommended: false
+          employment_status:
+            content: 1
+            review:
+              reasoning: The employment status is indicated as 'Erwerbstätig' in the document, corresponding to '1'.
+              recommended: false
+          insured_first_name:
+            content: null
+            review:
+              reasoning: No information about the primary insured person's first name is present in the document.
+              recommended: true
+          insured_last_name:
+            content: null
+            review:
+              reasoning: No information about the primary insured person's last name is present in the document.
+              recommended: true
+          insured_birth_date:
+            content: null
+            review:
+              reasoning: No information about the primary insured person's birth date is present in the document.
+              recommended: true
+          insured_social_security_number:
+            content: null
+            review:
+              reasoning: No information about the primary insured person's social security number is present in the document.
+              recommended: true
+          employer_name:
+            content: null
+            review:
+              reasoning: No information about the employer's name is present in the document.
+              recommended: true
+          employer_address:
+            content: null
+            review:
+              reasoning: No information about the employer's address is present in the document.
+              recommended: true
+          employer_city:
+            content: null
+            review:
+              reasoning: No information about the employer's city is present in the document.
+              recommended: true
+          employer_postal_code:
+            content: null
+            review:
+              reasoning: No information about the employer's postal code is present in the document.
+              recommended: true
+          referral_date:
+            content: '2025-01-01'
+            review:
+              reasoning: The referral date '01.01.2025' is clearly visible and legible in the document.
+              recommended: false
+          referral_diagnosis:
+            content: Verdacht auf Arthrose os pisiforme links
+            review:
+              reasoning: The diagnosis is clearly visible and legible, but contains abbreviations that need replacement.
+              recommended: true
+          clinical_symptoms:
+            content: therapieresistente anhaltende Schmerzen
+            review:
+              reasoning: The clinical symptoms 'therapieresistente anhaltende Schmerzen' are clearly visible and legible in the document.
+              recommended: false
+          ordered_procedure:
+            content: MRT HG links
+            review:
+              reasoning: The procedure is clearly visible and legible, but contains abbreviations that need replacement.
+              recommended: true
+          previous_findings:
+            content: NativRöntgen
+            review:
+              reasoning: The previous findings 'NativRöntgen' are clearly visible and legible in the document.
+              recommended: false
+          referrer_first_name:
+            content: Max
+            review:
+              reasoning: The referrer's first name 'Max' is clearly visible and legible in the document.
+              recommended: false
+          referrer_last_name:
+            content: Mustermann
+            review:
+              reasoning: The referrer's last name 'Mustermann' is clearly visible and legible in the document.
+              recommended: false
+          referrer_title:
+            content: Dr.
+            review:
+              reasoning: The referrer's title 'Dr.' is clearly visible and legible in the document.
+              recommended: false
+          referrer_address:
+            content: Orthogasse 1/2
+            review:
+              reasoning: The referrer's address 'Orthogasse 1/2' is clearly visible and legible in the document.
+              recommended: false
+          referrer_city:
+            content: Wien
+            review:
+              reasoning: The referrer's city 'Wien' is clearly visible and legible in the document.
+              recommended: false
+          referrer_postal_code:
+            content: '1010'
+            review:
+              reasoning: The referrer's postal code '1010' is clearly visible and legible in the document.
+              recommended: false
+          partner_contract_number:
+            content: '01123456'
+            review:
+              reasoning: The partner contract number '01 12 34 56' is clearly visible and legible in the document, with spaces removed as per instructions.
+              recommended: false
+          report_delivery_address:
+            content: null
+            review:
+              reasoning: No report delivery address is present in the document.
+              recommended: true
+    extraction-response-example-1:
+      summary: Extraction Response Example 1
+      description: An example for an `Extraction` response.
+      value:
+        fields:
+          referral_diagnosis:
+            content: C61 - Castration-resistant prostate cancer in progress, N28.1 - Right renal cyst, F52.2 - Erectile dysfunction
+            review:
+              reasoning: The referral diagnosis is clearly stated with multiple diagnoses. The referral is complete and no review is needed.
+              recommended: false
+          ordered_procedure:
+            content: CT thorax/abdomen
+            review:
+              reasoning: The ordered procedure is clearly stated. No review is needed.
+              recommended: false
+    classification-request-example-1:
+      summary: Classification Request Example rdc-de-2025-02-14
+      description: An example for an `Classification` request for a base64-encoded JPG image.
+      value:
+        model: rdc-de-2025-02-14
+        document: JVBERi0xLjUNCiW1tbW1DQox...
+    classification-response-radiology-document-classification-german-example-1:
+      summary: Classification Response Example rdc-de-2025-02-14
+      description: An example for a `Classification` response.
+      value:
+        label:
+          reasoning: Considering the title 'MR-Zuweisung' and the contents, particularly the fact that it is a referral for MRI examination due to specific clinical symptoms and conditions noted, the most appropriate classification is 'Zuweisung'. The document fits perfectly as a referral for imaging based on diagnostic requirements set by a physician.
+          prediction: Zuweisung
+        review:
+          reasoning: The document is clearly legible and formatted as a professional referral, indicating no need for further review. The content is straightforward and matches the 'Zuweisung' classification.
+          recommended: false
   securitySchemes:
     ApiKeyAuth:
       type: http
