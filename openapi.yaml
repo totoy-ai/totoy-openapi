@@ -36,7 +36,7 @@ paths:
       tags:
         - Explanation
       x-speakeasy-group: Explanation
-      summary: Classifys a Document in Candidate labels
+      summary: Explains a document in any language
       description: Explains a given document Source in any language in a specified output language and language level.
       requestBody:
         required: true
@@ -676,7 +676,7 @@ paths:
         - Extraction
       x-speakeasy-group: Extraction
       summary: Extracts structured data from a Document
-      description: Extracts data fields from a document and outputs recommendations whether a field should be reviewed for validation. Use a prebuilt model or define custom fields for extraction.
+      description: Extracts data fields from a document and outputs recommendations whether a field should be reviewed for validation. Use a prebuilt model or define custom fields for an `Extraction`.
       requestBody:
         required: true
         content:
@@ -713,7 +713,7 @@ paths:
         - Classification
       x-speakeasy-group: Classification
       summary: Classifies a Document into labels based on its content.
-      description: Classifies documents into labels based on its content. Use prebuilt models or define custom labels for classification.
+      description: Classifies documents into labels based on its content. Use prebuilt models or define custom labels for a `Classification`.
       requestBody:
         required: true
         content:
